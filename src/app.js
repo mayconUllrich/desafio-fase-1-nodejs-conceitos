@@ -20,30 +20,33 @@ app.post("/repositories", (request, response) => {
   // receber as informações do corpo da requisição body
   const { title, url, techs } = request.body
 
+  
+  const id = uuid()
+  
   // criar o objeto repository
   const repository = {
+    id,
     title,
     url,
     techs,
     likes: 0,
   }
-
+  
   // anexar o repositório criado a Array repositories
   repositories.push(repository)
-
+  
   //retorne um json com repositorio criado
   return response.status(200).json(repository)
 });
 
 app.put("/repositories/:id", (request, response) => {
   
-  // fazer um update
   // pegar a id na requisição dos parametros
   const { id } = request.params
 
   // pegar o titulo e a url do corpo
-  const { title, url } = request.body
-
+  const { title, url, techs } = request.body
+  
   // selecionar o repositorio
   const repositoryIndex = repositories.findIndex(repository => repository.id === id)
 
@@ -51,19 +54,21 @@ app.put("/repositories/:id", (request, response) => {
   if (repositoryIndex < 0) {
     return response.status(400).json({error: 'Repository not found'})
   }
-  // fazer as alterações
-  // criar um novo repositorio com os novos dados
+
+  // criar um novo repositorio
   const repository = {
-    title,
+    id,
     url,
+    title,
+    techs,
+    likes: repositories[repositoryIndex].likes,
   }
+
   // salvar
   repositories[repositoryIndex] = repository
-    // retorno
 
-  response.status(200).json(repository)
-
-
+  // retorno
+  response.json(repository)
   
 });
 
@@ -89,21 +94,24 @@ app.delete("/repositories/:id", (req, res) => {
 });
 
 app.post("/repositories/:id/like", (request, response) => {
+
   // pegar o id do route params
   const { id } = request.params
 
   // encontrar o repositorio para add like
   const repository = repositories.find(repository => repository.id === id)
-
+  
   // verifica se o repositorio existe
   if (!repository) {
     return response.status(400).send()
   }
   // add like
-  repository.likes ++;
+  // repositories[repositoryIndex].likes = repositories[repositoryIndex].likes + 1;
+  repository.likes += 1;
 
   //retorno
   return response.json(repository)
+
 });
 
 module.exports = app;
