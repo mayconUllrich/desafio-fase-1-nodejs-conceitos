@@ -10,20 +10,32 @@ app.use(cors());
 
 const repositories = [];
 
+function getIndex( request, response, next){
+
+  const repositoryIndex = repositories.findIndex(
+    repository => repository.id ===  request.params.id)
+
+  if (repositoryIndex < 0) {
+    return response.status(400).json({error: 'repository not found.'})
+  } else {
+    response.locals.index = repositoryIndex
+    response.locals.id = request.params.id
+    return next()
+  }
+}
+
+app.use('/repositories/:id', getIndex)
+
 app.get("/repositories", (request, response) => {
-  // retorna todos os repositorios da aplicação
   return response.json(repositories)
 });
 
 app.post("/repositories", (request, response) => {
 
-  // receber as informações do corpo da requisição body
   const { title, url, techs } = request.body
-
   
   const id = uuid()
-  
-  // criar o objeto repository
+
   const repository = {
     id,
     title,
@@ -32,86 +44,38 @@ app.post("/repositories", (request, response) => {
     likes: 0,
   }
   
-  // anexar o repositório criado a Array repositories
   repositories.push(repository)
   
-  //retorne um json com repositorio criado
   return response.status(200).json(repository)
 });
 
 app.put("/repositories/:id", (request, response) => {
   
-  // pegar a id na requisição dos parametros
-  const { id } = request.params
-
-  // pegar o titulo e a url do corpo
   const { title, url, techs } = request.body
-  
-  // selecionar o repositorio
-  const repositoryIndex = repositories.findIndex(repository => repository.id === id)
 
-  //não permitir fazer update em um repositorio que nao existe
-  if (repositoryIndex < 0) {
-    return response.status(400).json({error: 'Repository not found'})
-  }
-
-  // criar um novo repositorio
   const repository = {
-    id,
-    url,
+    id: response.locals.id,
     title,
+    url,
     techs,
-    likes: repositories[repositoryIndex].likes,
+    likes: repositories[response.locals.index].likes,
   }
+  repositories[response.locals.index] = repository
 
-  // salvar
-  repositories[repositoryIndex] = repository
-
-  // retorno
-  response.json(repository)
-  
-});
-
-app.delete("/repositories/:id", (req, res) => {
-
-  //Pegar o id
-  const { id } = req.params
-  
-  // Filtrar pelo id
-  const repositoryIndex = repositories.findIndex(repository => repository.id === id)
-  
-  // verifica se repositoryindex não esta vazio status(400) erro
-  if (repositoryIndex < 0) {
-    return res.status(400).json({error: 'repository not found.'})
-  }
-
-  // excluir projeto
-  repositories.splice(repositoryIndex, 1)
-
-  // retorno status-204: retorna vaziu, porem OK.
-  return res.status(204).send()
-
-});
-
-app.post("/repositories/:id/like", (request, response) => {
-
-  // pegar o id do route params
-  const { id } = request.params
-
-  // encontrar o repositorio para add like
-  const repository = repositories.find(repository => repository.id === id)
-  
-  // verifica se o repositorio existe
-  if (!repository) {
-    return response.status(400).send()
-  }
-  // add like
-  // repositories[repositoryIndex].likes = repositories[repositoryIndex].likes + 1;
-  repository.likes += 1;
-
-  //retorno
   return response.json(repository)
 
 });
 
+app.delete("/repositories/:id", (require, response) => {
+  repositories.splice(response.locals.index, 1)
+  return response.status(204).send()
+});
+
+app.post("/repositories/:id/like", (request, response) => {
+  
+  repositories[response.locals.index].likes ++
+  return response.json(repositories[response.locals.index])
+    
+});
+  
 module.exports = app;
